@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Sales Tracker Pro">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
+    <title>Sales Tracker Pro - Mobile Ready PWA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .whatsapp-green {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .share-button {
+            transition: all 0.3s ease;
+        }
+        .share-button:active {
+            transform: scale(0.95);
+        }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            .mobile-input {
+                font-size: 16px; /* Prevents zoom on iOS */
+                min-height: 48px; /* Better touch targets */
+            }
+            
+            .mobile-button {
+                min-height: 48px;
+                font-size: 16px;
+                font-weight: 600;
+            }
+            
+            .mobile-card {
+                margin-bottom: 1rem;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            
+            .mobile-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .mobile-stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+            
+
+            
+            .modal-mobile {
+                margin: 0;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+            
+            .modal-content-mobile {
+                height: 100%;
+                overflow-y: auto;
+            }
+        }
+        
+        /* Touch feedback */
+        .touch-feedback:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+        }
+        
+        /* Better scrolling */
+        .smooth-scroll {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+        
+        /* Loading states */
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        /* Improved form styling */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-input:invalid {
+            border-color: #ef4444;
+        }
+        
+        /* Status indicators */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        .status-online { background: #10b981; }
+        .status-offline { background: #ef4444; }
+        .status-pending { background: #f59e0b; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- PWA Install Banner -->
+    <div id="installBanner" class="bg-blue-600 text-white p-3 text-center hidden">
+        <div class="flex items-center justify-center space-x-4">
+            <span>📱 Install Sales Tracker Pro for better experience</span>
+            <button id="installBtn" class="bg-white text-blue-600 px-4 py-1 rounded font-semibold">Install</button>
+            <button id="dismissBtn" class="text-white hover:text-gray-200">✕</button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="gradient-bg text-white py-4 md:py-6 shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4">
+            <div class="text-center">
+                <h1 class="text-2xl md:text-4xl font-bold mb-1 md:mb-2">📊 Sales Tracker Pro</h1>
+                <p class="text-sm md:text-lg opacity-90 mb-2 md:mb-0">Professional Sales Management</p>
+                <div class="hidden md:flex flex-wrap justify-center gap-2 text-sm mt-4">
+                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full">📱 PWA Ready</span>
+                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full">📊 Excel Export</span>
+                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full">📅 Date Filtering</span>
+                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full">💬 WhatsApp Share</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Quick Stats Dashboard -->
+        <div class="mobile-stats md:grid md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+            <div class="bg-white rounded-xl shadow-lg p-3 md:p-4 text-center mobile-card touch-feedback">
+                <div class="text-xl md:text-2xl mb-1 md:mb-2">🏪</div>
+                <div class="text-xl md:text-2xl font-bold text-blue-600" id="totalVisits">0</div>
+                <div class="text-xs md:text-sm text-gray-600">Total Visits</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-3 md:p-4 text-center mobile-card touch-feedback">
+                <div class="text-xl md:text-2xl mb-1 md:mb-2">💰</div>
+                <div class="text-xl md:text-2xl font-bold text-green-600" id="totalSales">$0</div>
+                <div class="text-xs md:text-sm text-gray-600">Total Sales</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-3 md:p-4 text-center mobile-card touch-feedback">
+                <div class="text-xl md:text-2xl mb-1 md:mb-2">📅</div>
+                <div class="text-xl md:text-2xl font-bold text-purple-600" id="todayVisits">0</div>
+                <div class="text-xs md:text-sm text-gray-600">Today's Visits</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-3 md:p-4 text-center mobile-card touch-feedback">
+                <div class="text-xl md:text-2xl mb-1 md:mb-2">📈</div>
+                <div class="text-xl md:text-2xl font-bold text-orange-600" id="avgSale">$0</div>
+                <div class="text-xs md:text-sm text-gray-600">Avg Sale</div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="mobile-grid lg:grid lg:grid-cols-3 gap-4 lg:gap-6">
+            <!-- Visit Form -->
+            <div class="lg:col-span-2 order-1">
+                <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mobile-card">
+                    <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800 flex items-center">
+                        <span class="mr-2 md:mr-3">📝</span>
+                        New Sales Visit
+                    </h2>
+                    
+                    <form id="visitForm" class="space-y-4">
+                        <div class="form-group">
+                            <label class="form-label">
+                                🏪 Shop/Store Name *
+                            </label>
+                            <input type="text" id="shopName" required 
+                                   class="form-input mobile-input" 
+                                   placeholder="Enter shop name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                🏢 Shop Type *
+                            </label>
+                            <select id="shopType" required class="form-input mobile-input">
+                                <option value="">Select Type</option>
+                                <option value="Wholesale">Wholesale</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Distributor">Distributor</option>
+                                <option value="Hawker">Hawker</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                📞 Contact Phone *
+                            </label>
+                            <input type="tel" id="contactPhone" required 
+                                   class="form-input mobile-input" 
+                                   placeholder="Enter phone number">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                💰 Sale Amount ($)
+                            </label>
+                            <input type="number" id="saleAmount" step="0.01" placeholder="0.00"
+                                   class="form-input mobile-input">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    🔒 Visit Date
+                                </label>
+                                <input type="text" id="visitDate" readonly 
+                                       class="form-input bg-gray-100 text-gray-600 text-sm">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">
+                                    🔒 Visit Time
+                                </label>
+                                <input type="text" id="visitTime" readonly 
+                                       class="form-input bg-gray-100 text-gray-600 text-sm">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                👤 Sales Representative
+                            </label>
+                            <input type="text" id="salesPerson" 
+                                   class="form-input mobile-input" 
+                                   placeholder="Enter your name">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                📝 Visit Notes
+                            </label>
+                            <textarea id="visitNotes" rows="3" placeholder="Additional notes about the visit..."
+                                      class="form-input mobile-input resize-none"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                📍 GPS Location
+                                <span class="status-dot status-pending" id="locationStatus"></span>
+                            </label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="gpsLocation" readonly placeholder="Getting location..."
+                                       class="form-input bg-gray-100 text-gray-600 flex-1 text-sm">
+                                <button type="button" id="refreshLocationBtn" 
+                                        class="mobile-button bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors px-4 touch-feedback">
+                                    🔄
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                📍 Location Details
+                            </label>
+                            <textarea id="locationDetails" rows="3" placeholder="Enter detailed address, landmarks, area name, city..."
+                                      class="form-input mobile-input resize-none"></textarea>
+                        </div>
+
+                        <!-- Camera Section -->
+                        <div class="border-t pt-4 md:pt-6 -mx-4 md:mx-0 px-4 md:px-0">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                                <span class="mr-2">📷</span>
+                                Visit Photos
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button type="button" id="startCameraBtn" 
+                                            class="mobile-button bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold touch-feedback">
+                                        📸 Camera
+                                    </button>
+                                    <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
+                                    <button type="button" id="uploadBtn" 
+                                            class="mobile-button bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold touch-feedback">
+                                        📁 Upload
+                                    </button>
+                                </div>
+                                
+                                <div id="cameraSection" class="hidden">
+                                    <div class="relative bg-black rounded-lg overflow-hidden">
+                                        <video id="cameraPreview" autoplay muted playsinline class="w-full bg-black" style="min-height: 280px; max-height: 400px; object-fit: cover;"></video>
+                                        
+                                        <!-- Camera Controls Overlay -->
+                                        <div class="absolute inset-0 pointer-events-none">
+                                            <!-- Top Controls -->
+                                            <div class="absolute top-3 left-3 right-3 flex justify-between items-center pointer-events-auto">
+                                                <div class="bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                                    <span id="cameraMode">📷 Back Camera</span>
+                                                </div>
+                                                <button type="button" id="switchCameraBtn" 
+                                                        class="bg-black bg-opacity-70 text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-90 transition-all touch-feedback text-lg shadow-lg">
+                                                    🔄
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Center Focus Indicator -->
+                                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-white border-opacity-50 rounded-lg pointer-events-none"></div>
+                                            
+                                            <!-- Bottom Controls -->
+                                            <div class="absolute bottom-4 left-4 right-4 pointer-events-auto">
+                                                <div class="grid grid-cols-3 gap-3 items-center">
+                                                    <button type="button" id="stopCameraBtn" 
+                                                            class="bg-red-600 bg-opacity-90 text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-100 transition-all touch-feedback shadow-lg">
+                                                        ❌
+                                                    </button>
+                                                    <button type="button" id="captureBtn" 
+                                                            class="bg-white text-gray-800 rounded-full w-16 h-16 flex items-center justify-center hover:bg-gray-100 transition-all touch-feedback shadow-xl border-4 border-gray-300 text-2xl">
+                                                        📸
+                                                    </button>
+                                                    <div class="flex justify-end">
+                                                        <div class="bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                                                            <span id="photoCount">0 photos</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="photoGallery" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" 
+                                class="w-full mobile-button bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all font-bold shadow-lg touch-feedback sticky bottom-4 z-10 md:static">
+                            ✅ Save Visit Record
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-4 md:space-y-6 order-2">
+                <!-- Team Head Configuration -->
+                <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mobile-card">
+                    <h3 class="text-lg md:text-xl font-bold mb-3 md:mb-4 text-gray-800 flex items-center">
+                        <span class="mr-2">👥</span>
+                        Team Head Settings
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="form-label text-sm">
+                                👤 Manager Name
+                            </label>
+                            <input type="text" id="teamHeadName" placeholder="Manager Name" 
+                                   class="form-input mobile-input text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="form-label text-sm">
+                                📱 WhatsApp Number
+                            </label>
+                            <input type="tel" id="teamHeadNumber" placeholder="+1234567890" 
+                                   class="form-input mobile-input text-sm">
+                            <p class="text-xs text-gray-500 mt-1">Include country code (e.g., +1)</p>
+                        </div>
+                        
+                        <button id="saveTeamHeadBtn" 
+                                class="w-full mobile-button bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold text-sm touch-feedback">
+                            💾 Save Team Head Info
+                        </button>
+                        
+                        <div id="teamHeadStatus" class="text-xs text-center p-2 rounded bg-gray-50">
+                            <span class="text-gray-600">Team head not configured</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export & Share -->
+                <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mobile-card">
+                    <h3 class="text-lg md:text-xl font-bold mb-3 md:mb-4 text-gray-800 flex items-center">
+                        <span class="mr-2">📤</span>
+                        Export & Share
+                    </h3>
+                    
+                    <!-- Date Range Filter -->
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <h4 class="font-semibold text-gray-700 mb-2 text-sm">📅 Date Range</h4>
+                        <div class="space-y-2">
+                            <input type="date" id="fromDate" class="form-input text-sm">
+                            <input type="date" id="toDate" class="form-input text-sm">
+                            <div class="grid grid-cols-3 gap-1">
+                                <button id="todayBtn" class="mobile-button bg-blue-500 text-white rounded text-xs hover:bg-blue-600 touch-feedback py-2">
+                                    Today
+                                </button>
+                                <button id="weekBtn" class="mobile-button bg-blue-500 text-white rounded text-xs hover:bg-blue-600 touch-feedback py-2">
+                                    Week
+                                </button>
+                                <button id="monthBtn" class="mobile-button bg-blue-500 text-white rounded text-xs hover:bg-blue-600 touch-feedback py-2">
+                                    Month
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <button id="exportExcelBtn" 
+                                class="w-full mobile-button bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold flex items-center justify-center touch-feedback">
+                            <span class="mr-2">📊</span>
+                            Export Excel Report
+                        </button>
+                        
+                        <button id="shareWhatsAppBtn" 
+                                class="w-full mobile-button whatsapp-green text-white rounded-lg share-button font-semibold flex items-center justify-center touch-feedback">
+                            <span class="mr-2">📱</span>
+                            Share to Team Head
+                        </button>
+                        
+                        <button id="exportCSVBtn" 
+                                class="w-full mobile-button bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center justify-center touch-feedback">
+                            <span class="mr-2">📄</span>
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Daily Report Status -->
+                <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mobile-card">
+                    <h3 class="text-lg md:text-xl font-bold mb-3 md:mb-4 text-gray-800 flex items-center">
+                        <span class="mr-2">📅</span>
+                        Daily Report Status
+                    </h3>
+                    <div id="dailyReportStatus" class="space-y-2 text-sm">
+                        <div class="p-3 bg-gray-50 rounded-lg text-center">
+                            <span class="text-gray-600">Loading status...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Management -->
+                <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mobile-card">
+                    <h3 class="text-lg md:text-xl font-bold mb-3 md:mb-4 text-gray-800 flex items-center">
+                        <span class="mr-2">🗂️</span>
+                        Data Management
+                    </h3>
+                    <div class="space-y-3">
+                        <button id="viewRecordsBtn" 
+                                class="w-full mobile-button bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold touch-feedback">
+                            📋 View All Records
+                        </button>
+                        
+                        <button id="viewReportHistoryBtn" 
+                                class="w-full mobile-button bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold touch-feedback">
+                            📊 Report History
+                        </button>
+                        
+                        <button id="backupBtn" 
+                                class="w-full mobile-button bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-semibold touch-feedback">
+                            💾 Backup Data
+                        </button>
+                        
+                        <button id="clearDataBtn" 
+                                class="w-full mobile-button bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold touch-feedback">
+                            🗑️ Clear All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Records Modal -->
+        <div id="recordsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-2 md:p-4">
+                <div class="bg-white rounded-xl md:rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] md:max-h-[90vh] overflow-hidden modal-mobile md:modal-desktop">
+                    <div class="flex items-center justify-between p-4 md:p-6 border-b bg-gray-50 sticky top-0 z-10">
+                        <h2 class="text-lg md:text-2xl font-bold text-gray-800">📋 Sales Records</h2>
+                        <button id="closeRecordsBtn" class="text-gray-500 hover:text-gray-700 text-2xl touch-feedback p-2">×</button>
+                    </div>
+                    
+                    <div class="p-4 md:p-6 modal-content-mobile">
+                        <div class="mb-4 space-y-3 md:space-y-0 md:flex md:space-x-4">
+                            <input type="text" id="searchInput" placeholder="Search records..." 
+                                   class="form-input mobile-input flex-1">
+                            <button id="searchBtn" class="mobile-button bg-blue-600 text-white rounded-lg hover:bg-blue-700 touch-feedback w-full md:w-auto px-4">
+                                🔍 Search
+                            </button>
+                        </div>
+                        
+                        <div id="recordsList" class="overflow-auto max-h-96 smooth-scroll"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WhatsApp Share Modal -->
+        <div id="whatsappModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-2 md:p-4">
+                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full modal-mobile md:modal-desktop">
+                    <div class="flex items-center justify-between p-4 md:p-6 border-b whatsapp-green text-white rounded-t-xl">
+                        <h2 class="text-lg md:text-xl font-bold flex items-center">
+                            <span class="mr-2">📱</span>
+                            Share Report
+                        </h2>
+                        <button id="closeWhatsAppBtn" class="text-white hover:text-gray-200 text-2xl touch-feedback p-2">×</button>
+                    </div>
+                    
+                    <div class="p-4 md:p-6 space-y-4 modal-content-mobile">
+                        <div class="bg-blue-50 p-3 md:p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-800 mb-2 text-sm md:text-base">👥 Team Head</h4>
+                            <div class="text-xs md:text-sm text-blue-700">
+                                <div>Name: <span id="displayManagerName">Not Set</span></div>
+                                <div>Number: <span id="displayManagerNumber">Not Set</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-50 p-3 md:p-4 rounded-lg">
+                            <h4 class="font-semibold text-green-800 mb-2 text-sm md:text-base">📊 Report Summary</h4>
+                            <div class="text-xs md:text-sm text-green-700 space-y-1">
+                                <div>Records: <span id="reportCount">0</span></div>
+                                <div>Total Sales: <span id="reportSales">$0.00</span></div>
+                                <div>Date Range: <span id="reportDateRange">-</span></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label text-sm">
+                                Message Preview
+                            </label>
+                            <textarea id="messagePreview" rows="6" readonly
+                                      class="form-input bg-gray-50 text-xs md:text-sm resize-none"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="sendReportBtn" 
+                                    class="mobile-button whatsapp-green text-white rounded-lg hover:opacity-90 transition-opacity font-semibold touch-feedback">
+                                📤 Send
+                            </button>
+                            <button id="cancelShareBtn" 
+                                    class="mobile-button bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors touch-feedback">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg hidden z-50 transform transition-all duration-300">
+        <div class="flex items-center space-x-2">
+            <span id="toastIcon">✅</span>
+            <span id="toastMessage">Success!</span>
+        </div>
+    </div>
+
+    <script>
+        class SalesTrackerPro {
+            constructor() {
+                this.records = JSON.parse(localStorage.getItem('salesRecords')) || [];
+                this.sentReports = JSON.parse(localStorage.getItem('sentReports')) || {};
+                this.photos = [];
+                this.currentStream = null;
+                this.deferredPrompt = null;
+                this.locationWatcher = null;
+                this.currentFacingMode = 'environment'; // 'environment' for back, 'user' for front
+                this.availableCameras = [];
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.updateDateTime();
+                this.loadSettings();
+                this.updateStats();
+                this.setupPWA();
+                this.getLocation();
+                this.setDefaultDates();
+                this.updateDailyReportStatus();
+                this.detectAvailableCameras();
+                
+                // Update time every second
+                setInterval(() => this.updateDateTime(), 1000);
+            }
+
+            setupEventListeners() {
+                // Form submission
+                document.getElementById('visitForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.saveVisit();
+                });
+
+                // Camera controls
+                document.getElementById('startCameraBtn').addEventListener('click', () => this.startCamera());
+                document.getElementById('stopCameraBtn').addEventListener('click', () => this.stopCamera());
+                document.getElementById('captureBtn').addEventListener('click', () => this.capturePhoto());
+                document.getElementById('switchCameraBtn').addEventListener('click', () => this.switchCamera());
+                document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+                document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
+
+                // Location
+                document.getElementById('refreshLocationBtn').addEventListener('click', () => this.getLocation());
+
+                // Team head settings
+                document.getElementById('saveTeamHeadBtn').addEventListener('click', () => this.saveTeamHead());
+
+                // Date range buttons
+                document.getElementById('todayBtn').addEventListener('click', () => this.setDateRange('today'));
+                document.getElementById('weekBtn').addEventListener('click', () => this.setDateRange('week'));
+                document.getElementById('monthBtn').addEventListener('click', () => this.setDateRange('month'));
+
+                // Export buttons
+                document.getElementById('exportExcelBtn').addEventListener('click', () => this.exportExcel());
+                document.getElementById('exportCSVBtn').addEventListener('click', () => this.exportCSV());
+                document.getElementById('shareWhatsAppBtn').addEventListener('click', () => this.openWhatsAppModal());
+
+                // Data management
+                document.getElementById('viewRecordsBtn').addEventListener('click', () => this.showRecords());
+                document.getElementById('viewReportHistoryBtn').addEventListener('click', () => this.showReportHistory());
+                document.getElementById('backupBtn').addEventListener('click', () => this.backupData());
+                document.getElementById('clearDataBtn').addEventListener('click', () => this.clearData());
+
+                // Modal controls
+                document.getElementById('closeRecordsBtn').addEventListener('click', () => this.hideModal('recordsModal'));
+                document.getElementById('closeWhatsAppBtn').addEventListener('click', () => this.hideModal('whatsappModal'));
+                document.getElementById('cancelShareBtn').addEventListener('click', () => this.hideModal('whatsappModal'));
+                document.getElementById('sendReportBtn').addEventListener('click', () => this.sendWhatsAppReport());
+
+                // Search
+                document.getElementById('searchBtn').addEventListener('click', () => this.searchRecords());
+
+                // Auto-save sales person
+                document.getElementById('salesPerson').addEventListener('blur', () => {
+                    const name = document.getElementById('salesPerson').value.trim();
+                    if (name) localStorage.setItem('salesPersonName', name);
+                });
+
+                // PWA install
+                document.getElementById('installBtn')?.addEventListener('click', () => this.installPWA());
+                document.getElementById('dismissBtn')?.addEventListener('click', () => this.dismissInstall());
+            }
+
+            updateDateTime() {
+                const now = new Date();
+                document.getElementById('visitDate').value = now.toLocaleDateString();
+                document.getElementById('visitTime').value = now.toLocaleTimeString();
+            }
+
+            loadSettings() {
+                // Load sales person name
+                const savedName = localStorage.getItem('salesPersonName');
+                if (savedName) {
+                    document.getElementById('salesPerson').value = savedName;
+                }
+
+                // Load team head info
+                const teamHead = JSON.parse(localStorage.getItem('teamHeadInfo') || '{}');
+                if (teamHead.name) {
+                    document.getElementById('teamHeadName').value = teamHead.name;
+                    document.getElementById('teamHeadNumber').value = teamHead.number;
+                    this.updateTeamHeadStatus(teamHead);
+                }
+            }
+
+            saveTeamHead() {
+                const name = document.getElementById('teamHeadName').value.trim();
+                const number = document.getElementById('teamHeadNumber').value.trim();
+
+                if (!name || !number) {
+                    this.showToast('Please enter both name and number', 'error');
+                    return;
+                }
+
+                const teamHead = { name, number };
+                localStorage.setItem('teamHeadInfo', JSON.stringify(teamHead));
+                this.updateTeamHeadStatus(teamHead);
+                this.showToast('Team head info saved!');
+            }
+
+            updateTeamHeadStatus(teamHead) {
+                const status = document.getElementById('teamHeadStatus');
+                if (teamHead.name && teamHead.number) {
+                    status.innerHTML = `<span class="text-green-600">✅ ${teamHead.name} configured</span>`;
+                    status.className = 'text-xs text-center p-2 rounded bg-green-50';
+                } else {
+                    status.innerHTML = `<span class="text-gray-600">Team head not configured</span>`;
+                    status.className = 'text-xs text-center p-2 rounded bg-gray-50';
+                }
+            }
+
+            setDefaultDates() {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('fromDate').value = today;
+                document.getElementById('toDate').value = today;
+            }
+
+            setDateRange(range) {
+                const today = new Date();
+                const toDate = today.toISOString().split('T')[0];
+                let fromDate;
+
+                switch (range) {
+                    case 'today':
+                        fromDate = toDate;
+                        break;
+                    case 'week':
+                        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        fromDate = weekAgo.toISOString().split('T')[0];
+                        break;
+                    case 'month':
+                        const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        fromDate = monthAgo.toISOString().split('T')[0];
+                        break;
+                }
+
+                document.getElementById('fromDate').value = fromDate;
+                document.getElementById('toDate').value = toDate;
+                this.showToast(`Date range set to ${range}`);
+            }
+
+            async getLocation() {
+                try {
+                    // Stop previous watcher if exists
+                    if (this.locationWatcher) {
+                        navigator.geolocation.clearWatch(this.locationWatcher);
+                    }
+
+                    // Start real-time location tracking
+                    this.locationWatcher = navigator.geolocation.watchPosition(
+                        (position) => {
+                            const { latitude, longitude, accuracy } = position.coords;
+                            const location = `${latitude.toFixed(6)}, ${longitude.toFixed(6)} (±${Math.round(accuracy)}m)`;
+                            document.getElementById('gpsLocation').value = location;
+                            
+                            // Update location status indicator
+                            const refreshBtn = document.getElementById('refreshLocationBtn');
+                            const statusDot = document.getElementById('locationStatus');
+                            refreshBtn.innerHTML = '🟢';
+                            refreshBtn.title = `Accuracy: ±${Math.round(accuracy)}m`;
+                            statusDot.className = 'status-dot status-online';
+                        },
+                        (error) => {
+                            document.getElementById('gpsLocation').value = 'Location unavailable';
+                            const refreshBtn = document.getElementById('refreshLocationBtn');
+                            refreshBtn.innerHTML = '🔴';
+                            refreshBtn.title = 'Location error';
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 15000,
+                            maximumAge: 30000
+                        }
+                    );
+
+                    // Also get immediate location
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 15000,
+                            maximumAge: 30000
+                        });
+                    });
+
+                    const { latitude, longitude, accuracy } = position.coords;
+                    const location = `${latitude.toFixed(6)}, ${longitude.toFixed(6)} (±${Math.round(accuracy)}m)`;
+                    document.getElementById('gpsLocation').value = location;
+                    
+                } catch (error) {
+                    document.getElementById('gpsLocation').value = 'Location unavailable - Please enable GPS';
+                    const refreshBtn = document.getElementById('refreshLocationBtn');
+                    refreshBtn.innerHTML = '🔴';
+                    refreshBtn.title = 'Location access denied';
+                }
+            }
+
+            async detectAvailableCameras() {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    this.availableCameras = devices.filter(device => device.kind === 'videoinput');
+                    
+                    // Show switch button only if multiple cameras available
+                    const switchBtn = document.getElementById('switchCameraBtn');
+                    if (this.availableCameras.length > 1) {
+                        switchBtn.style.display = 'flex';
+                    } else {
+                        switchBtn.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.log('Could not enumerate devices:', error);
+                }
+            }
+
+            async startCamera() {
+                try {
+                    // Stop current stream if exists
+                    if (this.currentStream) {
+                        this.currentStream.getTracks().forEach(track => track.stop());
+                    }
+
+                    const constraints = {
+                        video: { 
+                            facingMode: this.currentFacingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    };
+
+                    this.currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                    const video = document.getElementById('cameraPreview');
+                    video.srcObject = this.currentStream;
+                    document.getElementById('cameraSection').classList.remove('hidden');
+                    document.getElementById('startCameraBtn').textContent = '📹 Camera Active';
+                    
+                    // Update camera mode display
+                    this.updateCameraModeDisplay();
+                    
+                } catch (error) {
+                    // If specific camera fails, try the other one
+                    if (this.currentFacingMode === 'environment') {
+                        try {
+                            this.currentFacingMode = 'user';
+                            const fallbackConstraints = {
+                                video: { 
+                                    facingMode: this.currentFacingMode,
+                                    width: { ideal: 1280 },
+                                    height: { ideal: 720 }
+                                }
+                            };
+                            this.currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                            const video = document.getElementById('cameraPreview');
+                            video.srcObject = this.currentStream;
+                            document.getElementById('cameraSection').classList.remove('hidden');
+                            document.getElementById('startCameraBtn').textContent = '📹 Camera Active';
+                            this.updateCameraModeDisplay();
+                            this.showToast('Using front camera (back camera unavailable)');
+                        } catch (fallbackError) {
+                            this.showToast('Camera access denied or unavailable', 'error');
+                        }
+                    } else {
+                        this.showToast('Camera access denied or unavailable', 'error');
+                    }
+                }
+            }
+
+            async switchCamera() {
+                if (this.availableCameras.length <= 1) {
+                    this.showToast('Only one camera available', 'error');
+                    return;
+                }
+
+                try {
+                    // Toggle between front and back camera
+                    this.currentFacingMode = this.currentFacingMode === 'environment' ? 'user' : 'environment';
+                    
+                    // Show loading state
+                    const switchBtn = document.getElementById('switchCameraBtn');
+                    const originalContent = switchBtn.innerHTML;
+                    switchBtn.innerHTML = '⏳';
+                    switchBtn.disabled = true;
+
+                    // Restart camera with new facing mode
+                    await this.startCamera();
+                    
+                    // Restore button
+                    switchBtn.innerHTML = originalContent;
+                    switchBtn.disabled = false;
+                    
+                    // Provide haptic feedback
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    
+                } catch (error) {
+                    this.showToast('Failed to switch camera', 'error');
+                    // Restore button
+                    const switchBtn = document.getElementById('switchCameraBtn');
+                    switchBtn.innerHTML = '🔄';
+                    switchBtn.disabled = false;
+                }
+            }
+
+            updateCameraModeDisplay() {
+                const modeDisplay = document.getElementById('cameraMode');
+                if (this.currentFacingMode === 'environment') {
+                    modeDisplay.textContent = '📷 Back Camera';
+                } else {
+                    modeDisplay.textContent = '🤳 Front Camera';
+                }
+            }
+
+            stopCamera() {
+                if (this.currentStream) {
+                    this.currentStream.getTracks().forEach(track => track.stop());
+                    this.currentStream = null;
+                }
+                document.getElementById('cameraSection').classList.add('hidden');
+                document.getElementById('startCameraBtn').textContent = '📸 Camera';
+            }
+
+            capturePhoto() {
+                const video = document.getElementById('cameraPreview');
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+
+                // Add timestamp
+                const now = new Date();
+                const timestamp = now.toLocaleString();
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(10, canvas.height - 50, 300, 40);
+                ctx.fillStyle = 'white';
+                ctx.font = '14px Arial';
+                ctx.fillText(timestamp, 20, canvas.height - 25);
+
+                const photoData = canvas.toDataURL('image/jpeg', 0.8);
+                this.photos.push({ data: photoData, timestamp });
+                this.displayPhotos();
+                this.showToast('Photo captured!');
+
+                // Camera shutter vibration - short and crisp
+                if (navigator.vibrate) navigator.vibrate(50);
+            }
+
+            handleFileUpload(event) {
+                const files = Array.from(event.target.files);
+                files.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.photos.push({
+                                data: e.target.result,
+                                timestamp: new Date().toLocaleString()
+                            });
+                            this.displayPhotos();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                this.showToast(`${files.length} photos uploaded!`);
+            }
+
+            displayPhotos() {
+                const gallery = document.getElementById('photoGallery');
+                gallery.innerHTML = this.photos.map((photo, index) => `
+                    <div class="relative group">
+                        <img src="${photo.data}" class="w-full h-24 object-cover rounded-lg shadow">
+                        <button onclick="salesTracker.removePhoto(${index})" 
+                                class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 text-xs hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                            ×
+                        </button>
+                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-xs p-1 rounded-b-lg">
+                            ${photo.timestamp}
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Update photo count in camera overlay
+                const photoCountEl = document.getElementById('photoCount');
+                if (photoCountEl) {
+                    photoCountEl.textContent = `${this.photos.length} photos`;
+                }
+            }
+
+            removePhoto(index) {
+                this.photos.splice(index, 1);
+                this.displayPhotos();
+                this.showToast('Photo removed');
+            }
+
+            saveVisit() {
+                const formData = {
+                    id: Date.now(),
+                    shopName: document.getElementById('shopName').value.trim(),
+                    shopType: document.getElementById('shopType').value,
+                    contactPhone: document.getElementById('contactPhone').value.trim(),
+                    saleAmount: parseFloat(document.getElementById('saleAmount').value) || 0,
+                    visitDate: document.getElementById('visitDate').value,
+                    visitTime: document.getElementById('visitTime').value,
+                    salesPerson: document.getElementById('salesPerson').value.trim(),
+                    visitNotes: document.getElementById('visitNotes').value.trim(),
+                    gpsLocation: document.getElementById('gpsLocation').value,
+                    locationDetails: document.getElementById('locationDetails').value.trim(),
+                    photos: [...this.photos],
+                    timestamp: new Date().toISOString()
+                };
+
+                // Validation
+                if (!formData.shopName || !formData.shopType || !formData.contactPhone) {
+                    this.showToast('Please fill required fields', 'error');
+                    // Error vibration pattern
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    return;
+                }
+
+                this.records.push(formData);
+                this.saveToStorage();
+                this.resetForm();
+                this.updateStats();
+                this.updateDailyReportStatus();
+                
+                // Success vibration pattern - longer celebration vibration
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
+                
+                this.showToast('Visit saved successfully!');
+            }
+
+            resetForm() {
+                document.getElementById('visitForm').reset();
+                this.photos = [];
+                this.displayPhotos();
+                this.stopCamera();
+                this.loadSettings();
+                this.getLocation();
+            }
+
+            saveToStorage() {
+                localStorage.setItem('salesRecords', JSON.stringify(this.records));
+                localStorage.setItem('sentReports', JSON.stringify(this.sentReports));
+                
+                // Auto-cleanup old data (keep 1 year = 365 days)
+                this.cleanupOldData();
+            }
+
+            cleanupOldData() {
+                const oneYearAgo = new Date();
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                
+                // Keep records from last 1 year only
+                this.records = this.records.filter(record => {
+                    const recordDate = new Date(record.timestamp);
+                    return recordDate >= oneYearAgo;
+                });
+                
+                // Clean up old sent reports (keep 1 year)
+                const cutoffDate = oneYearAgo.toISOString().split('T')[0];
+                Object.keys(this.sentReports).forEach(date => {
+                    if (date < cutoffDate) {
+                        delete this.sentReports[date];
+                    }
+                });
+                
+                localStorage.setItem('salesRecords', JSON.stringify(this.records));
+                localStorage.setItem('sentReports', JSON.stringify(this.sentReports));
+            }
+
+            updateStats() {
+                const total = this.records.length;
+                const totalSales = this.records.reduce((sum, r) => sum + (r.saleAmount || 0), 0);
+                const today = new Date().toLocaleDateString();
+                const todayRecords = this.records.filter(r => r.visitDate === today);
+                const avgSale = total > 0 ? totalSales / total : 0;
+
+                document.getElementById('totalVisits').textContent = total;
+                document.getElementById('totalSales').textContent = `$${totalSales.toFixed(2)}`;
+                document.getElementById('todayVisits').textContent = todayRecords.length;
+                document.getElementById('avgSale').textContent = `$${avgSale.toFixed(2)}`;
+            }
+
+            getFilteredRecords() {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+
+                if (!fromDate || !toDate) return this.records;
+
+                return this.records.filter(record => {
+                    const recordDate = new Date(record.timestamp).toISOString().split('T')[0];
+                    return recordDate >= fromDate && recordDate <= toDate;
+                });
+            }
+
+            exportExcel() {
+                const records = this.getFilteredRecords();
+                if (records.length === 0) {
+                    this.showToast('No records to export', 'error');
+                    return;
+                }
+
+                const wb = XLSX.utils.book_new();
+                const data = records.map((r, i) => ({
+                    'No.': i + 1,
+                    'Shop Name': r.shopName,
+                    'Shop Type': r.shopType,
+                    'Contact': r.contactPhone,
+                    'Sale Amount': r.saleAmount || 0,
+                    'Date': r.visitDate,
+                    'Time': r.visitTime,
+                    'Sales Rep': r.salesPerson,
+                    'Notes': r.visitNotes,
+                    'GPS Location': r.gpsLocation,
+                    'Location Details': r.locationDetails || '',
+                    'Photos': r.photos ? r.photos.length : 0
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(data);
+                ws['!cols'] = Array(12).fill({ wch: 15 });
+                XLSX.utils.book_append_sheet(wb, ws, 'Sales Records');
+
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+                const filename = `Sales_Report_${dateRange}.xlsx`;
+
+                XLSX.writeFile(wb, filename);
+                this.showToast(`Excel exported: ${records.length} records`);
+                return filename;
+            }
+
+            exportCSV() {
+                const records = this.getFilteredRecords();
+                if (records.length === 0) {
+                    this.showToast('No records to export', 'error');
+                    return;
+                }
+
+                const headers = ['No.', 'Shop Name', 'Shop Type', 'Contact', 'Sale Amount', 'Date', 'Time', 'Sales Rep', 'Notes', 'GPS Location', 'Location Details', 'Photos'];
+                const rows = records.map((r, i) => [
+                    i + 1, r.shopName, r.shopType, r.contactPhone, r.saleAmount || 0,
+                    r.visitDate, r.visitTime, r.salesPerson, r.visitNotes, r.gpsLocation, r.locationDetails || '', r.photos ? r.photos.length : 0
+                ]);
+
+                const csv = [headers, ...rows].map(row => 
+                    row.map(field => `"${field}"`).join(',')
+                ).join('\n');
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+                a.download = `Sales_Report_${dateRange}.csv`;
+                
+                a.click();
+                URL.revokeObjectURL(url);
+                this.showToast(`CSV exported: ${records.length} records`);
+            }
+
+            openWhatsAppModal() {
+                const records = this.getFilteredRecords();
+                if (records.length === 0) {
+                    this.showToast('No records to share', 'error');
+                    return;
+                }
+
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                
+                // Check if today's report already sent
+                const today = new Date().toISOString().split('T')[0];
+                const isToday = fromDate === today && toDate === today;
+                
+                if (isToday && this.sentReports[today]) {
+                    const sentTime = new Date(this.sentReports[today].timestamp).toLocaleTimeString();
+                    if (!confirm(`⚠️ Today's report already sent at ${sentTime}.\n\nSend again? This will update the sent status.`)) {
+                        return;
+                    }
+                }
+
+                const teamHead = JSON.parse(localStorage.getItem('teamHeadInfo') || '{}');
+                document.getElementById('displayManagerName').textContent = teamHead.name || 'Not Set';
+                document.getElementById('displayManagerNumber').textContent = teamHead.number || 'Not Set';
+
+                const totalSales = records.reduce((sum, r) => sum + (r.saleAmount || 0), 0);
+                const dateRange = fromDate === toDate ? fromDate : `${fromDate} to ${toDate}`;
+
+                document.getElementById('reportCount').textContent = records.length;
+                document.getElementById('reportSales').textContent = `$${totalSales.toFixed(2)}`;
+                document.getElementById('reportDateRange').textContent = dateRange;
+
+                const salesPerson = localStorage.getItem('salesPersonName') || 'Sales Rep';
+                const reportStatus = isToday && this.sentReports[today] ? ' (RESEND)' : '';
+                
+                const message = `📊 *SALES REPORT${reportStatus}*\n\n` +
+                    `👤 *Rep:* ${salesPerson}\n` +
+                    `📅 *Period:* ${dateRange}\n` +
+                    `🏪 *Visits:* ${records.length}\n` +
+                    `💰 *Total Sales:* $${totalSales.toFixed(2)}\n\n` +
+                    `📋 *Visit Details:*\n` +
+                    records.slice(0, 8).map((r, i) => 
+                        `${i + 1}. ${r.shopName} (${r.shopType}) - $${(r.saleAmount || 0).toFixed(2)}`
+                    ).join('\n') +
+                    (records.length > 8 ? `\n... +${records.length - 8} more visits` : '') +
+                    `\n\n📊 *Detailed Excel report attached*\n` +
+                    `⏰ *Generated:* ${new Date().toLocaleString()}\n` +
+                    `🤖 Sales Tracker Pro`;
+
+                document.getElementById('messagePreview').value = message;
+                this.showModal('whatsappModal');
+            }
+
+            sendWhatsAppReport() {
+                const teamHead = JSON.parse(localStorage.getItem('teamHeadInfo') || '{}');
+                if (!teamHead.number) {
+                    this.showToast('Configure team head number first', 'error');
+                    return;
+                }
+
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const records = this.getFilteredRecords();
+
+                // Export Excel first
+                this.exportExcel();
+
+                // Track sent report
+                const today = new Date().toISOString().split('T')[0];
+                const isToday = fromDate === today && toDate === today;
+                
+                if (isToday) {
+                    this.sentReports[today] = {
+                        timestamp: new Date().toISOString(),
+                        recordCount: records.length,
+                        totalSales: records.reduce((sum, r) => sum + (r.saleAmount || 0), 0),
+                        sentTo: teamHead.name
+                    };
+                    this.saveToStorage();
+                }
+
+                // Send WhatsApp message
+                const message = document.getElementById('messagePreview').value;
+                const encodedMessage = encodeURIComponent(message);
+                const cleanNumber = teamHead.number.replace(/[^\d]/g, '');
+                const whatsappURL = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
+
+                window.open(whatsappURL, '_blank');
+                this.hideModal('whatsappModal');
+                
+                if (isToday) {
+                    this.showToast(`📤 Today's report sent to ${teamHead.name}! Status saved.`);
+                    this.updateDailyReportStatus();
+                } else {
+                    this.showToast(`📤 Report sent to ${teamHead.name}!`);
+                }
+            }
+
+            showRecords() {
+                // Reset modal title
+                document.querySelector('#recordsModal h2').textContent = '📋 Sales Records';
+                this.displayRecordsList();
+                this.showModal('recordsModal');
+            }
+
+            displayRecordsList(filteredRecords = null) {
+                const records = filteredRecords || this.records;
+                const container = document.getElementById('recordsList');
+
+                if (records.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">No records found</p>';
+                    return;
+                }
+
+                container.innerHTML = records.map((record, index) => `
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-lg text-gray-800">${record.shopName}</h4>
+                            <span class="text-sm text-gray-500">#${index + 1}</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div><strong>Type:</strong> ${record.shopType}</div>
+                            <div><strong>Phone:</strong> ${record.contactPhone}</div>
+                            <div><strong>Sale:</strong> $${(record.saleAmount || 0).toFixed(2)}</div>
+                            <div><strong>Date:</strong> ${record.visitDate} ${record.visitTime}</div>
+                            <div><strong>Rep:</strong> ${record.salesPerson}</div>
+                            <div><strong>Photos:</strong> ${record.photos ? record.photos.length : 0}</div>
+                        </div>
+                        ${record.visitNotes ? `<div class="mt-2 text-sm"><strong>Notes:</strong> ${record.visitNotes}</div>` : ''}
+                        ${record.gpsLocation ? `<div class="mt-2 text-sm"><strong>GPS:</strong> ${record.gpsLocation}</div>` : ''}
+                        ${record.locationDetails ? `<div class="mt-2 text-sm"><strong>Location Details:</strong> ${record.locationDetails}</div>` : ''}
+                        <button onclick="salesTracker.deleteRecord(${record.id})" 
+                                class="mt-2 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            searchRecords() {
+                const query = document.getElementById('searchInput').value.toLowerCase().trim();
+                if (!query) {
+                    this.displayRecordsList();
+                    return;
+                }
+
+                const filtered = this.records.filter(record =>
+                    record.shopName.toLowerCase().includes(query) ||
+                    record.shopType.toLowerCase().includes(query) ||
+                    record.salesPerson.toLowerCase().includes(query) ||
+                    record.contactPhone.includes(query)
+                );
+
+                this.displayRecordsList(filtered);
+                this.showToast(`Found ${filtered.length} records`);
+            }
+
+            deleteRecord(id) {
+                if (confirm('Delete this record?')) {
+                    this.records = this.records.filter(r => r.id !== id);
+                    this.saveToStorage();
+                    this.updateStats();
+                    this.displayRecordsList();
+                    this.showToast('Record deleted');
+                }
+            }
+
+            backupData() {
+                const backup = {
+                    records: this.records,
+                    settings: {
+                        salesPersonName: localStorage.getItem('salesPersonName'),
+                        teamHeadInfo: localStorage.getItem('teamHeadInfo')
+                    },
+                    exportDate: new Date().toISOString()
+                };
+
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `SalesTracker_Backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.showToast('Backup created successfully!');
+            }
+
+            updateDailyReportStatus() {
+                const today = new Date().toISOString().split('T')[0];
+                const todayRecords = this.records.filter(r => r.visitDate === today);
+                const reportSent = this.sentReports[today];
+                
+                const statusContainer = document.getElementById('dailyReportStatus');
+                
+                if (reportSent) {
+                    const sentTime = new Date(reportSent.timestamp).toLocaleTimeString();
+                    statusContainer.innerHTML = `
+                        <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-green-800 font-semibold">✅ Today's Report Sent</span>
+                            </div>
+                            <div class="text-green-700 text-xs mt-1">
+                                <div>Time: ${sentTime}</div>
+                                <div>Records: ${reportSent.recordCount}</div>
+                                <div>Sales: $${reportSent.totalSales.toFixed(2)}</div>
+                                <div>To: ${reportSent.sentTo}</div>
+                            </div>
+                        </div>
+                    `;
+                } else if (todayRecords.length > 0) {
+                    statusContainer.innerHTML = `
+                        <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-yellow-800 font-semibold">⏳ Report Pending</span>
+                            </div>
+                            <div class="text-yellow-700 text-xs mt-1">
+                                <div>Today's visits: ${todayRecords.length}</div>
+                                <div>Ready to send daily report</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    statusContainer.innerHTML = `
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600 font-semibold">📝 No visits today</span>
+                            </div>
+                            <div class="text-gray-500 text-xs mt-1">
+                                Add visits to generate report
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            showReportHistory() {
+                const historyHtml = Object.keys(this.sentReports)
+                    .sort((a, b) => b.localeCompare(a)) // Latest first
+                    .slice(0, 30) // Show last 30 reports
+                    .map(date => {
+                        const report = this.sentReports[date];
+                        const sentTime = new Date(report.timestamp).toLocaleString();
+                        return `
+                            <div class="border border-gray-200 rounded-lg p-4 mb-3">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-gray-800">${date}</h4>
+                                    <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">✅ Sent</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                    <div><strong>Time:</strong> ${sentTime}</div>
+                                    <div><strong>Records:</strong> ${report.recordCount}</div>
+                                    <div><strong>Sales:</strong> $${report.totalSales.toFixed(2)}</div>
+                                    <div><strong>To:</strong> ${report.sentTo}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                const container = document.getElementById('recordsList');
+                container.innerHTML = historyHtml || '<p class="text-gray-500 text-center py-8">No report history found</p>';
+                
+                // Update modal title
+                document.querySelector('#recordsModal h2').textContent = '📊 Report History';
+                this.showModal('recordsModal');
+            }
+
+            clearData() {
+                if (confirm('Clear all data? This cannot be undone!')) {
+                    this.records = [];
+                    this.sentReports = {};
+                    this.saveToStorage();
+                    this.updateStats();
+                    this.updateDailyReportStatus();
+                    this.showToast('All data cleared');
+                }
+            }
+
+            showModal(modalId) {
+                document.getElementById(modalId).classList.remove('hidden');
+            }
+
+            hideModal(modalId) {
+                document.getElementById(modalId).classList.add('hidden');
+            }
+
+            setupPWA() {
+                // Register service worker
+                if ('serviceWorker' in navigator) {
+                    const swCode = `
+                        const CACHE_NAME = 'sales-tracker-pro-v1';
+                        const urlsToCache = ['/'];
+                        
+                        self.addEventListener('install', event => {
+                            event.waitUntil(
+                                caches.open(CACHE_NAME)
+                                    .then(cache => cache.addAll(urlsToCache))
+                            );
+                        });
+                        
+                        self.addEventListener('fetch', event => {
+                            event.respondWith(
+                                caches.match(event.request)
+                                    .then(response => response || fetch(event.request))
+                            );
+                        });
+                    `;
+                    
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(swUrl);
+                }
+
+                // Handle install prompt
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    this.deferredPrompt = e;
+                    document.getElementById('installBanner').classList.remove('hidden');
+                });
+
+                // Add manifest
+                const manifest = {
+                    name: "Sales Tracker Pro",
+                    short_name: "SalesTracker",
+                    description: "Professional Sales Management with Smart Reporting",
+                    start_url: "/",
+                    display: "standalone",
+                    background_color: "#667eea",
+                    theme_color: "#667eea",
+                    icons: [{
+                        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23667eea'/%3E%3Ctext x='50' y='60' font-size='40' text-anchor='middle' fill='white'%3E📊%3C/text%3E%3C/svg%3E",
+                        sizes: "192x192",
+                        type: "image/svg+xml"
+                    }]
+                };
+
+                const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+                const manifestURL = URL.createObjectURL(manifestBlob);
+                const link = document.createElement('link');
+                link.rel = 'manifest';
+                link.href = manifestURL;
+                document.head.appendChild(link);
+            }
+
+            installPWA() {
+                if (this.deferredPrompt) {
+                    this.deferredPrompt.prompt();
+                    this.deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            this.showToast('App installed successfully!');
+                        }
+                        this.deferredPrompt = null;
+                        document.getElementById('installBanner').classList.add('hidden');
+                    });
+                }
+            }
+
+            dismissInstall() {
+                document.getElementById('installBanner').classList.add('hidden');
+            }
+
+            showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                const icon = document.getElementById('toastIcon');
+                const messageEl = document.getElementById('toastMessage');
+
+                icon.textContent = type === 'error' ? '❌' : '✅';
+                messageEl.textContent = message;
+                
+                toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 ${
+                    type === 'error' ? 'bg-red-600' : 'bg-green-600'
+                } text-white`;
+
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 3000);
+            }
+        }
+
+        // Initialize the app
+        const salesTracker = new SalesTrackerPro();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'978b6d63b77394b2',t:'MTc1Njc5OTU0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
